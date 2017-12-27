@@ -10,3 +10,6 @@ These dependencies can be installed by running `pip install -U -r requirements.t
 
 ### Configuration
 An example configuration file is provided in `config/config.empty.ini`. This file should be copied to `config.ini` in the same folder and filled in. It is required for you to enter your Reddit client ID, client secret, and the appropiate subreddits you want to track for the bot's basic functionality to work. Most of these details can be obtained from https://www.reddit.com/prefs/apps/, which requires creating a new application. For more information about configuration options, see the comments inside the example file.
+
+### Running
+Use `python run.py` to start the bot after filling in the configuration file.

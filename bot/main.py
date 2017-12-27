@@ -3,6 +3,7 @@ import datetime
 import re
 import time
 import logging
+import os
 
 import praw
 
@@ -17,6 +18,10 @@ class RedditBot:
 
         self.targets = ['wikia', 'runescape.wikia.com', 'oldschoolrunescape.wikia.com']
         self.targets_regex = r"(wiki)\b"
+
+        # Make sure the data folder exists
+        if not os.path.exists('data'):
+            os.makedirs('data')
 
     def comments(self):
         """Monitors subreddits for comments"""
@@ -40,7 +45,7 @@ class RedditBot:
             if '503' in str(e):  # Reddit's servers are doing some weird shit
                 log.error("Received 503 from Reddit ({}). Waiting before restarting...".format(e))
                 time.sleep(30)  # Wait 30 seconds before trying again
-                log.debug("Restarting monitoring after 503...")
+                log.warning("Restarting monitoring after 503...")
                 self.comments()  # Go again
 
     def links(self):
@@ -78,7 +83,7 @@ class RedditBot:
             if '503' in str(e):  # Reddit's servers are doing some weird shit
                 log.error("Received 503 from Reddit ({}). Waiting before restarting...".format(e))
                 time.sleep(30)  # Wait 30 seconds before trying again
-                log.debug("Restarting monitoring after 503...")
+                log.warning("Restarting monitoring after 503...")
                 self.links()  # Go again
 
     def handle_text(self, post):
@@ -134,6 +139,10 @@ class RedditBot:
                 return None
 
             time = datetime.datetime.fromtimestamp(float(ts))
+        except FileNotFoundError:
+            log.debug('Creating new file as it does not exist: {}'.format(path))
+            open(path, 'a').close()  # Create the file
+            return None
         except Exception as e:
             log.error("There was a problem reading the last submission cache file. ({})".format(e))
             return None
