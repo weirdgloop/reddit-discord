@@ -17,7 +17,6 @@ class RedditBot:
         self.config = Config('config/config.ini')
 
         self.targets = ['wikia', 'runescape.wikia.com', 'oldschoolrunescape.wikia.com']
-        self.targets_regex = r"(wiki)\b"
 
         # Make sure the data folder exists
         if not os.path.exists('data'):
@@ -33,7 +32,9 @@ class RedditBot:
         try:
             for c in sub.stream.comments():
                 if 'bot' not in c.author.name:  # Ignore bots - this isn't too clean but works mostly
-                    if (any(t in c.body for t in self.targets) or re.match(self.targets_regex, c.body)):
+                    rgx_match = re.findall(self.config.target_regex, c.body)
+                    if (rgx_match):
+                        log.debug('Criteria was matched: {}'.format(rgx_match))
                         comment_time = datetime.datetime.fromtimestamp(c.created)
                         last_time = self.grab_last_time('data/last_comment.txt')
 
@@ -58,21 +59,19 @@ class RedditBot:
         try:
             for post in sub.stream.submissions():
                 if 'bot' not in post.author.name:  # Ignore bots - this isn't too clean but works mostly
-                    # Check that the submission is more recent than the last one
-                    post_time = datetime.datetime.fromtimestamp(post.created)
-
-                    if post.is_self:
-                        last_time = self.grab_last_time('data/last_text_submission.txt')
-                    else:
-                        last_time = self.grab_last_time('data/last_link_submission.txt')
-
                     check = [post.url, post.title, post.selftext]
 
-                    if (last_time is None) or (post_time > last_time):
-                        matching = [c for c in check if any(t in c for t in self.targets)]
-                        matching_rgx = [c for c in check if re.findall(self.targets_regex, c)]
+                    matching_rgx = [c for c in check if re.findall(self.config.target_regex, c)]
 
-                        if matching or matching_rgx:  # One or more criteria was matched
+                    if matching_rgx:  # One or more criteria was matched
+                        log.debug('Criteria was matched: {}'.format(matching_rgx))
+                        post_time = datetime.datetime.fromtimestamp(post.created)
+                        if post.is_self:
+                            last_time = self.grab_last_time('data/last_text_submission.txt')
+                        else:
+                            last_time = self.grab_last_time('data/last_link_submission.txt')
+
+                        if (last_time is None) or (post_time > last_time):
                             if post.is_self:
                                 log.info("New self post: {0.title} ({0.subreddit.display_name})".format(post))
                                 self.handle_text(post)
@@ -87,18 +86,21 @@ class RedditBot:
                 self.links()  # Go again
 
     def handle_text(self, post):
-        e = self.generate_text_post_embed(post)  # Create a Discord embed
-        e.post()  # POST to Discord webhook
+        if self.config.discord_webhook:
+            e = self.generate_text_post_embed(post)  # Create a Discord embed
+            e.post()  # POST to Discord webhook
         self.save_last_time('data/last_text_submission.txt', post.created)
 
     def handle_link(self, post):
-        e = self.generate_link_post_embed(post)  # Create a Discord embed
-        e.post()  # POST to Discord webhook
+        if self.config.discord_webhook:
+            e = self.generate_link_post_embed(post)  # Create a Discord embed
+            e.post()  # POST to Discord webhook
         self.save_last_time('data/last_link_submission.txt', post.created)
 
     def handle_comment(self, comment):
-        e = self.generate_comment_embed(comment)  # Create a Discord embed
-        e.post()  # POST to Discord webhook
+        if self.config.discord_webhook:
+            e = self.generate_comment_embed(comment)  # Create a Discord embed
+            e.post()  # POST to Discord webhook
         self.save_last_time('data/last_comment.txt', comment.created)
 
     def generate_text_post_embed(self, post):
@@ -189,19 +191,28 @@ class Config:
         self.reddit_subreddits = self.c.get('General', 'Reddit-Subreddits', fallback=None)
 
         self.discord_webhook = self.c.get('Discord', 'WebhookURL', fallback=None)
+        self.target_regex = self.c.get('General', 'TargetRegex', fallback=None)
 
         self.validate()
 
     def validate(self):
+        """Validates the data provided in the config file"""
         assert self.reddit_client_id, 'No client ID was specified'
         assert self.reddit_client_secret, 'No client secret was specified'
         assert self.reddit_subreddits, 'No subreddits were specified'
+        assert self.target_regex, 'No target regex was specified'
 
         self.reddit_subreddits = self.reddit_subreddits.split()
 
+        log.debug('Using {} as regex pattern'.format(self.target_regex))
+
+        # Optionals
         if self.reddit_username:
             self.reddit_user_agent += ' (u/{})'.format(self.reddit_username)
             log.debug('User agent is now: {}'.format(self.reddit_user_agent))
+
+        if not self.discord_webhook:
+            log.warning('No webhook URL provided. Will not log to Discord.')
 
 if __name__ == '__main__':
     raise RuntimeError('This file cannot be executed directly.')
