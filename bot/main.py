@@ -16,8 +16,6 @@ class RedditBot:
         log.info("Loading configuration...")
         self.config = Config('config/config.ini')
 
-        self.targets = ['wikia', 'runescape.wikia.com', 'oldschoolrunescape.wikia.com']
-
         # Make sure the data folder exists
         if not os.path.exists('data'):
             os.makedirs('data')
@@ -66,18 +64,11 @@ class RedditBot:
                     if matching_rgx:  # One or more criteria was matched
                         log.debug('Criteria was matched: {}'.format(matching_rgx))
                         post_time = datetime.datetime.fromtimestamp(post.created)
-                        if post.is_self:
-                            last_time = self.grab_last_time('data/last_text_submission.txt')
-                        else:
-                            last_time = self.grab_last_time('data/last_link_submission.txt')
+                        last_time = self.grab_last_time('data/last_submission.txt')
 
                         if (last_time is None) or (post_time > last_time):
-                            if post.is_self:
-                                log.info("New self post: {0.title} ({0.subreddit.display_name})".format(post))
-                                self.handle_text(post)
-                            else:
-                                log.info("New link post: {0.title} ({0.subreddit.display_name})".format(post))
-                                self.handle_link(post)
+                            log.info("New post: {0.title} ({0.subreddit.display_name})".format(post))
+                            self.handle_post(post)
         except Exception as e:
             if '503' in str(e):  # Reddit's servers are doing some weird shit
                 log.error("Received 503 from Reddit ({}). Waiting before restarting...".format(e))
@@ -85,51 +76,48 @@ class RedditBot:
                 log.warning("Restarting monitoring after 503...")
                 self.links()  # Go again
 
-    def handle_text(self, post):
+    def handle_post(self, post):
+        """Handles an individual post"""
         if self.config.discord_webhook:
-            e = self.generate_text_post_embed(post)  # Create a Discord embed
-            e.post()  # POST to Discord webhook
-        self.save_last_time('data/last_text_submission.txt', post.created)
+            self.handle_discord(post)
+        self.save_last_time('data/last_submission.txt', post.created)
 
-    def handle_link(self, post):
-        if self.config.discord_webhook:
-            e = self.generate_link_post_embed(post)  # Create a Discord embed
-            e.post()  # POST to Discord webhook
-        self.save_last_time('data/last_link_submission.txt', post.created)
+        # TODO: reply to post
 
     def handle_comment(self, comment):
+        """Handles an individual comment"""
         if self.config.discord_webhook:
-            e = self.generate_comment_embed(comment)  # Create a Discord embed
-            e.post()  # POST to Discord webhook
+            self.handle_discord(comment)
         self.save_last_time('data/last_comment.txt', comment.created)
 
-    def generate_text_post_embed(self, post):
-        embed = Webhook(self.config.discord_webhook, color=1146810)
-        embed.set_author(name=post.author.name, icon=post.subreddit.icon_img, url='https://reddit.com/u/{}'.format(post.author.name))
-        embed.set_title(title='New text post on /r/{}'.format(post.subreddit.display_name), url=post.shortlink)
-        embed.add_field(name='**Title**', value='{}'.format(post.title), inline=True)
-        embed.add_field(name='**Post**', value=post.selftext[:150] + (post.selftext[150:] and '...'), inline=True)
-        embed.set_thumbnail('https://i.imgur.com/UTOtv5S.png')
-        return embed
+        # TODO: reply to post
 
-    def generate_link_post_embed(self, post):
-        embed = Webhook(self.config.discord_webhook, color=1146810)
-        embed.set_author(name=post.author.name, icon=post.subreddit.icon_img, url='https://reddit.com/u/{}'.format(post.author.name))
-        embed.set_title(title='New link post on /r/{}'.format(post.subreddit.display_name), url=post.shortlink)
-        embed.add_field(name='**Title**', value='{}'.format(post.title), inline=True)
-        embed.add_field(name='**Links to**', value=post.url, inline=True)
-        embed.set_thumbnail(post.thumbnail)
-        return embed
+    def handle_discord(self, data):
+        """Handles the Discord webhooks"""
+        embed = Webhook(self.config.discord_webhook, color=16729344)
+        embed.set_author(name=data.author.name, icon=data.subreddit.icon_img, url='https://reddit.com/u/{0}'.format(data.author.name))
 
-    def generate_comment_embed(self, comment):
-        permalink = 'https://reddit.com' + comment.permalink
-        embed = Webhook(self.config.discord_webhook, color=1146810)
-        embed.set_author(name=comment.author.name, icon=comment.subreddit.icon_img, url='https://reddit.com/u/{}'.format(comment.author.name))
-        embed.set_title(title='Mentioned in a comment on /r/{}'.format(comment.subreddit.display_name), url=permalink)
-        embed.add_field(name='**Thread**', value='{}'.format(comment.submission.title), inline=True)
-        embed.add_field(name='**Comment**', value=comment.body[:150] + (comment.body[150:] and '...'), inline=True)
-        embed.set_thumbnail('https://i.imgur.com/UTOtv5S.png')
-        return embed
+        if isinstance(data, praw.models.Submission):
+            p_type = 'submission'
+            url = data.shortlink
+            title = data.title
+            body = data.selftext if data.is_self else data.url
+        elif isinstance(data, praw.models.Comment):
+            p_type = 'comment'
+            url = data.permalink
+            title = data.submission.title
+            body = data.body
+        else:
+            log.warning('Received data that was not a submission or comment: {0}'.format(data))
+            return
+
+        embed.set_title(title='New {0} (/r/{1})'.format(p_type, data.subreddit.display_name), url=url)
+        embed.add_field(name='**Title**', value=title, inline=True)
+        embed.add_field(name='**Body**', value=body[:150] + (body[150:] and '...'), inline=True)
+        embed.set_thumbnail(data.thumbnail if data.thumbnail else 'https://i.imgur.com/UTOtv5S.png')
+        embed.set_footer(text='Reddit bot by Jayden', ts=True, icon='https://i.imgur.com/S5X2GOw.png')
+        e = embed.post()
+        return e
 
     def grab_last_time(self, path):
         """Reads timestamp from a file"""

@@ -143,10 +143,13 @@ class Webhook:
                 self.post(attempt=attempt + 1)
             else:
                 log.error('Could not send webhook, rate-limited, tried {} times'.format(attempt))
+                return None
         elif result.status_code == 400:
             log.error('Could not send webhook, client error')
+            return None
         else:
             log.debug('Sent webhook to Discord. Received {}'.format(result.status_code))
+            return result
 
 if __name__ == '__main__':
     raise RuntimeError('This file cannot be executed directly.')
