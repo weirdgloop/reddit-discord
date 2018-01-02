@@ -29,7 +29,7 @@ class RedditBot:
 
         try:
             for c in sub.stream.comments():
-                if 'bot' not in c.author.name:  # Ignore bots - this isn't too clean but works mostly
+                if 'bot' not in c.author.name.lower():  # Ignore bots - this isn't too clean but works mostly
                     rgx_match = re.findall(self.config.target_regex, c.body)
                     if (rgx_match):
                         log.debug('Criteria was matched: {}'.format(rgx_match))
@@ -38,7 +38,7 @@ class RedditBot:
 
                         if (last_time is None) or (comment_time > last_time):
                             # Handle the comment
-                            log.info("Detected a new comment: {0} ({0.subreddit.display_name})".format(c))
+                            log.info("New comment: {0} ({0.subreddit.display_name})".format(c))
                             self.handle_comment(c)
         except Exception as e:
             if '503' in str(e):  # Reddit's servers are doing some weird shit
@@ -56,7 +56,7 @@ class RedditBot:
 
         try:
             for post in sub.stream.submissions():
-                if 'bot' not in post.author.name:  # Ignore bots - this isn't too clean but works mostly
+                if 'bot' not in post.author.name.lower():  # Ignore bots - this isn't too clean but works mostly
                     check = [post.url, post.title, post.selftext]
 
                     matching_rgx = [c for c in check if re.findall(self.config.target_regex, c)]
@@ -102,20 +102,23 @@ class RedditBot:
             url = data.shortlink
             title = data.title
             body = data.selftext if data.is_self else data.url
+            thumb = data.thumbnail if not data.is_self else 'https://i.imgur.com/UTOtv5S.png'
         elif isinstance(data, praw.models.Comment):
             p_type = 'comment'
-            url = data.permalink
+            url = 'https://reddit.com' + data.permalink
             title = data.submission.title
             body = data.body
+            thumb = 'https://i.imgur.com/UTOtv5S.png'
         else:
             log.warning('Received data that was not a submission or comment: {0}'.format(data))
             return
 
         embed.set_title(title='New {0} (/r/{1})'.format(p_type, data.subreddit.display_name), url=url)
         embed.add_field(name='**Title**', value=title, inline=True)
-        embed.add_field(name='**Body**', value=body[:150] + (body[150:] and '...'), inline=True)
-        embed.set_thumbnail(data.thumbnail if data.thumbnail else 'https://i.imgur.com/UTOtv5S.png')
+        embed.add_field(name='**Body**', value=body[:750] + (body[750:] and '...'), inline=True)
+        embed.set_thumbnail(thumb)
         embed.set_footer(text='Reddit bot by Jayden', ts=True, icon='https://i.imgur.com/S5X2GOw.png')
+
         e = embed.post()
         return e
 

@@ -14,7 +14,7 @@ An example configuration file is provided in `config/config.empty.ini`. This fil
 For the target regular expression, this can be used to match queries about both the RuneScape and Old School RuneScape wiki:
 
 ```
-(wiki\b|wikia|runescape\.wikia\.com|oldschoolrunescape\.wikia\.com)
+(wiki(?![\w/])|wikia|runescape\.wikia\.com|oldschoolrunescape\.wikia\.com)
 ```
 
 ### Running
