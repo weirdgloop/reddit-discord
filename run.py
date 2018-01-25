@@ -24,17 +24,6 @@ log.setLevel(logging.DEBUG)
 
 def init():
     app = bot.RedditBot()
-    t1 = threading.Thread(name="Links", target=app.links)
-    t1.daemon = True
-    t1.start()
-    log.debug("Spawned new thread for link submissions")
-    t2 = threading.Thread(name="Comments", target=app.comments)
-    t2.daemon = True
-    t2.start()
-    log.debug("Spawned new thread for comment submissions")
-
-    while True:  # keep main thread running until keyboardinterrupt
-        time.sleep(1)
-
+    app.handle_new()
 if __name__ == '__main__':
     init()

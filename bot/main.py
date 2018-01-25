@@ -20,61 +20,57 @@ class RedditBot:
         if not os.path.exists('data'):
             os.makedirs('data')
 
-    def comments(self):
-        """Monitors subreddits for comments"""
-        reddit = self.create_reddit_instance()
+        self.reddit = self.create_reddit_instance()
+
+    def handle_new(self):
+        """Monitors subreddits"""
         subs = '+'.join(self.config.reddit_subreddits)
-        sub = reddit.subreddit(subs)
-        log.info("Monitoring subreddits for comments: {}".format(subs))
+        sub = self.reddit.subreddit(subs)
+        log.info("Monitoring subreddits: {}".format(subs))
 
-        try:
-            for c in sub.stream.comments():
-                if 'bot' not in c.author.name.lower():  # Ignore bots - this isn't too clean but works mostly
-                    rgx_match = re.findall(self.config.target_regex, c.body)
-                    if (rgx_match):
-                        log.debug('Criteria was matched: {}'.format(rgx_match))
-                        comment_time = datetime.datetime.fromtimestamp(c.created)
-                        last_time = self.grab_last_time('data/last_comment.txt')
+        c_stream = sub.stream.comments(pause_after=0)
+        s_stream = sub.stream.submissions(pause_after=0)
 
-                        if (last_time is None) or (comment_time > last_time):
-                            # Handle the comment
-                            log.info("New comment: {0} ({0.subreddit.display_name})".format(c))
-                            self.handle_comment(c)
-        except Exception as e:
-            if '503' in str(e):  # Reddit's servers are doing some weird shit
-                log.error("Received 503 from Reddit ({}). Waiting before restarting...".format(e))
-                time.sleep(30)  # Wait 30 seconds before trying again
-                log.warning("Restarting monitoring after 503...")
-                self.comments()  # Go again
+        while True:
+            try:
+                for c in c_stream:
+                    if c is None:
+                        break
+                    if 'bot' or 'automoderator' not in c.author.name.lower():  # Ignore bots - this isn't too clean but works mostly
+                        rgx_match = re.findall(self.config.target_regex, c.body)
+                        if (rgx_match):
+                            log.debug('Criteria was matched: {}'.format(rgx_match))
+                            comment_time = datetime.datetime.fromtimestamp(c.created)
+                            last_time = self.grab_last_time('data/last_comment.txt')
 
-    def links(self):
-        """Monitors subreddits for new posts"""
-        reddit = self.create_reddit_instance()
-        subs = '+'.join(self.config.reddit_subreddits)
-        sub = reddit.subreddit(subs)
-        log.info("Monitoring subreddits for posts: {}".format(subs))
+                            if (last_time is None) or (comment_time > last_time):
+                                # Handle the comment
+                                log.info("New comment: {0} ({0.subreddit.display_name})".format(c))
+                                self.handle_comment(c)
 
-        try:
-            for post in sub.stream.submissions():
-                if 'bot' not in post.author.name.lower():  # Ignore bots - this isn't too clean but works mostly
-                    check = [post.url, post.title, post.selftext]
+                for post in s_stream:
+                    if post is None:
+                        break
+                    if 'bot' or 'automoderator' not in post.author.name.lower():  # Ignore bots - this isn't too clean but works mostly
+                        check = [post.url, post.title, post.selftext]
 
-                    matching_rgx = [c for c in check if re.findall(self.config.target_regex, c)]
+                        matching_rgx = [c for c in check if re.findall(self.config.target_regex, c)]
 
-                    if matching_rgx:  # One or more criteria was matched
-                        log.debug('Criteria was matched: {}'.format(matching_rgx))
-                        post_time = datetime.datetime.fromtimestamp(post.created)
-                        last_time = self.grab_last_time('data/last_submission.txt')
+                        if matching_rgx:  # One or more criteria was matched
+                            log.debug('Criteria was matched: {}'.format(matching_rgx))
+                            post_time = datetime.datetime.fromtimestamp(post.created)
+                            last_time = self.grab_last_time('data/last_submission.txt')
 
-                        if (last_time is None) or (post_time > last_time):
-                            log.info("New post: {0.title} ({0.subreddit.display_name})".format(post))
-                            self.handle_post(post)
-        except Exception as e:
-            if '503' in str(e):  # Reddit's servers are doing some weird shit
-                log.error("Received 503 from Reddit ({}). Waiting before restarting...".format(e))
-                time.sleep(30)  # Wait 30 seconds before trying again
-                log.warning("Restarting monitoring after 503...")
-                self.links()  # Go again
+                            if (last_time is None) or (post_time > last_time):
+                                log.info("New post: {0.title} ({0.subreddit.display_name})".format(post))
+                                self.handle_post(post)
+
+            except Exception as e:
+                if '503' in str(e):  # Reddit's servers are doing some weird shit
+                    log.error("Received 503 from Reddit ({}). Waiting before restarting...".format(e))
+                    time.sleep(30)  # Wait 30 seconds before trying again
+                    log.warning("Restarting monitoring after 503...")
+                self.handle_new()  # Go again
 
     def handle_post(self, post):
         """Handles an individual post"""
