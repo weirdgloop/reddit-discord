@@ -1,0 +1,19 @@
+{
+    "default_regex": "([Ww]iki(?![\\w/])|[Ww]ikia(?![\\w.])|runescape\\.wikia\\.com|oldschoolrunescape\\.wikia\\.com)",
+    "hooks": [
+        {
+            "url": "",
+            "subreddits": [
+                "runescape"
+            ],
+            "regex": null
+        }
+    ],
+    "reddit": {
+        "client_id": "",
+        "client_secret": "",
+        "client_ua": "",
+        "username": "",
+        "password": ""
+    }
+}

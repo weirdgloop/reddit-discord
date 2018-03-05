@@ -106,3 +106,4 @@ venv.bak/
 # Project specific
 data/
 config.ini
+config.json
