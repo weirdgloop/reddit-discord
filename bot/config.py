@@ -40,6 +40,14 @@ class Config:
         self.reddit_username = reddit.get('username', '')
         self.reddit_password = reddit.get('password', '')
 
+        footer = data.get('footer', {})
+        self.footer_text = footer.get('text', '')
+        self.footer_icon = footer.get('icon', 'https://i.imgur.com/S5X2GOw.png')
+
+        thumbs = data.get('thumbnails' {})
+        self.comment_thumb = thumbs.get('comment', '')
+        self.sub_thumb = thumbs.get('text_submission', '')
+
         # Create a new object for each hook
         hooks = []
         for h in data['hooks']:

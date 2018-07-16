@@ -15,5 +15,13 @@
         "client_ua": "",
         "username": "",
         "password": ""
+    },
+    "footer": {
+        "text": "Reddit bot by Jayden",
+        "icon": "https://i.imgur.com/S5X2GOw.png"
+    },
+    "thumbnails": {
+        "comment": "https://i.imgur.com/UTOtv5S.png",
+        "text_submission": "https://i.imgur.com/UTOtv5S.png"
     }
 }

@@ -109,13 +109,13 @@ class RedditBot:
             url = data.shortlink
             title = data.title
             body = data.selftext if data.is_self else data.url
-            thumb = data.thumbnail if not data.is_self else 'https://i.imgur.com/UTOtv5S.png'
+            thumb = data.thumbnail if not data.is_self else self.config.sub_thumb
         elif isinstance(data, praw.models.Comment):
             p_type = 'comment'
             url = 'https://reddit.com' + data.permalink
             title = data.submission.title
             body = data.body
-            thumb = 'https://i.imgur.com/UTOtv5S.png'
+            thumb = self.config.comment_thumb
         else:
             log.warning('Received data that was not a submission or comment: {0}'.format(data))
             return
@@ -124,7 +124,7 @@ class RedditBot:
         embed.add_field(name='**Title**', value=title, inline=True)
         embed.add_field(name='**Body**', value=body[:750] + (body[750:] and '...'), inline=True)
         embed.set_thumbnail(thumb)
-        embed.set_footer(text='Reddit bot by Jayden', ts=True, icon='https://i.imgur.com/S5X2GOw.png')
+        embed.set_footer(text=self.config.footer_text, ts=True, icon=self.config.footer_icon)
 
         e = embed.post()
         return e
