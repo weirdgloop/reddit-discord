@@ -23,5 +23,8 @@
     "thumbnails": {
         "comment": "https://i.imgur.com/UTOtv5S.png",
         "text_submission": "https://i.imgur.com/UTOtv5S.png"
-    }
+    },
+    "ignore": [
+        "AutoModerator"
+    ]
 }

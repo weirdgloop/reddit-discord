@@ -41,40 +41,42 @@ class RedditBot:
                 for c in c_stream:
                     if c is None:
                         break
-                    if 'bot' or 'automoderator' not in c.author.name.lower():  # Ignore bots - this isn't too clean but works mostly
-                        for h in self.config.hooks:
-                            rgx_match = re.findall(h.regex, c.body)
-                            if (rgx_match and str(c.subreddit).lower() in h.subreddits):
-                                log.debug('Criteria was matched: {}'.format(rgx_match))
-                                comment_time = datetime.datetime.fromtimestamp(c.created)
-                                last_time = self.grab_last_time('data/last_comment.txt')
+                    if any(u.lower() == c.author.name.lower() for u in self.config.ignore_list):
+                        break
+                    for h in self.config.hooks:
+                        rgx_match = re.findall(h.regex, c.body)
+                        if (rgx_match and str(c.subreddit).lower() in h.subreddits):
+                            log.debug('Criteria was matched: {}'.format(rgx_match))
+                            comment_time = datetime.datetime.fromtimestamp(c.created)
+                            last_time = self.grab_last_time('data/last_comment.txt')
 
-                                if (last_time is None) or (comment_time > last_time):
-                                    # Handle the comment
-                                    log.info("New comment: {0} ({0.subreddit.display_name})".format(c))
-                                    self.handle_comment(c, h)
+                            if (last_time is None) or (comment_time > last_time):
+                                # Handle the comment
+                                log.info("New comment: {0} ({0.subreddit.display_name})".format(c))
+                                self.handle_comment(c, h)
 
-                        self.save_last_time('data/last_comment.txt', c.created)
+                    self.save_last_time('data/last_comment.txt', c.created)
 
                 for post in s_stream:
                     if post is None:
                         break
-                    if 'bot' or 'automoderator' not in post.author.name.lower():  # Ignore bots - this isn't too clean but works mostly
-                        check = [post.url, post.title, post.selftext]
+                    if any(u.lower() == post.author.name.lower() for u in self.config.ignore_list):
+                        break
+                    check = [post.url, post.title, post.selftext]
 
-                        for h in self.config.hooks:
-                            matching_rgx = [c for c in check if re.findall(h.regex, c)]
+                    for h in self.config.hooks:
+                        matching_rgx = [c for c in check if re.findall(h.regex, c)]
 
-                            if (matching_rgx and str(post.subreddit).lower() in h.subreddits):  # One or more criteria was matched
-                                log.debug('Criteria was matched: {}'.format(matching_rgx))
-                                post_time = datetime.datetime.fromtimestamp(post.created)
-                                last_time = self.grab_last_time('data/last_submission.txt')
+                        if (matching_rgx and str(post.subreddit).lower() in h.subreddits):  # One or more criteria was matched
+                            log.debug('Criteria was matched: {}'.format(matching_rgx))
+                            post_time = datetime.datetime.fromtimestamp(post.created)
+                            last_time = self.grab_last_time('data/last_submission.txt')
 
-                                if (last_time is None) or (post_time > last_time):
-                                    log.info("New post: {0.title} ({0.subreddit.display_name})".format(post))
-                                    self.handle_post(post, h)
-                        
-                        self.save_last_time('data/last_submission.txt', post.created)
+                            if (last_time is None) or (post_time > last_time):
+                                log.info("New post: {0.title} ({0.subreddit.display_name})".format(post))
+                                self.handle_post(post, h)
+                    
+                    self.save_last_time('data/last_submission.txt', post.created)
 
             except Exception as e:
                 if '503' in str(e):  # Reddit's servers are doing some weird shit

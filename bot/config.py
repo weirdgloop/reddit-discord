@@ -44,9 +44,11 @@ class Config:
         self.footer_text = footer.get('text', '')
         self.footer_icon = footer.get('icon', 'https://i.imgur.com/S5X2GOw.png')
 
-        thumbs = data.get('thumbnails' {})
+        thumbs = data.get('thumbnails', {})
         self.comment_thumb = thumbs.get('comment', '')
         self.sub_thumb = thumbs.get('text_submission', '')
+
+        self.ignore_list = data.get('ignore', [])
 
         # Create a new object for each hook
         hooks = []
