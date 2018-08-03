@@ -38,6 +38,7 @@ class RedditBot:
 
         while True:
             try:
+                last_time = datetime.datetime.fromisoformat(self.grab_last_time('data/last_check.txt'))
                 for c in c_stream:
                     if c is None:
                         break
@@ -47,8 +48,7 @@ class RedditBot:
                         rgx_match = re.findall(h.regex, c.body)
                         if (rgx_match and str(c.subreddit).lower() in h.subreddits):
                             log.debug('Criteria was matched: {}'.format(rgx_match))
-                            comment_time = datetime.datetime.fromtimestamp(c.created)
-                            last_time = datetime.datetime.fromtimestamp(self.grab_last_time('data/last_comment.txt'))
+                            comment_time = datetime.datetime.fromtimestamp(c.created_utc)
 
                             if (last_time is None) or (comment_time > last_time):
                                 # Handle the comment
@@ -56,8 +56,6 @@ class RedditBot:
                                 self.handle_comment(c, h)
                             else:
                                 log.debug('Skipping. Comment time was before last check.')
-
-                    self.save_last_time('data/last_comment.txt', c.created)
 
                 for post in s_stream:
                     if post is None:
@@ -71,16 +69,15 @@ class RedditBot:
 
                         if (matching_rgx and str(post.subreddit).lower() in h.subreddits):  # One or more criteria was matched
                             log.debug('Criteria was matched: {}'.format(matching_rgx))
-                            post_time = datetime.datetime.fromtimestamp(post.created)
-                            last_time = datetime.datetime.fromtimestamp(self.grab_last_time('data/last_submission.txt'))
+                            post_time = datetime.datetime.fromtimestamp(post.created_utc)
 
                             if (last_time is None) or (post_time > last_time):
                                 log.info("New post: {0.title} ({0.subreddit.display_name})".format(post))
                                 self.handle_post(post, h)
                             else:
                                 log.debug('Skipping. Post time was before last check.')
-                    
-                    self.save_last_time('data/last_submission.txt', post.created)
+            
+                self.save_last_time('data/last_check.txt', datetime.datetime.utcnow())
 
             except Exception as e:
                 if '503' in str(e):  # Reddit's servers are doing some weird shit
@@ -138,12 +135,10 @@ class RedditBot:
     def grab_last_time(self, path):
         """Reads timestamp from a file"""
         try:
+            ts = None
             with open(path) as f:
-                ts = f.read()
-            if not ts:
-                return None
-
-            time = datetime.datetime.fromtimestamp(float(ts))
+                ts = str(f.read())
+            return ts
         except FileNotFoundError:
             log.debug('Creating new file as it does not exist: {}'.format(path))
             open(path, 'a').close()  # Create the file
