@@ -39,6 +39,9 @@ class RedditBot:
         while True:
             try:
                 last_time = datetime.datetime.fromisoformat(self.grab_last_time('data/last_check.txt'))
+            except Exception as e:
+                last_time = None
+            try:
                 for c in c_stream:
                     if c is None:
                         break
