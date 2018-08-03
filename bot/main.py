@@ -48,12 +48,14 @@ class RedditBot:
                         if (rgx_match and str(c.subreddit).lower() in h.subreddits):
                             log.debug('Criteria was matched: {}'.format(rgx_match))
                             comment_time = datetime.datetime.fromtimestamp(c.created)
-                            last_time = self.grab_last_time('data/last_comment.txt')
+                            last_time = datetime.datetime.fromtimestamp(self.grab_last_time('data/last_comment.txt'))
 
                             if (last_time is None) or (comment_time > last_time):
                                 # Handle the comment
                                 log.info("New comment: {0} ({0.subreddit.display_name})".format(c))
                                 self.handle_comment(c, h)
+                            else:
+                                log.debug('Skipping. Comment time was before last check.')
 
                     self.save_last_time('data/last_comment.txt', c.created)
 
@@ -70,11 +72,13 @@ class RedditBot:
                         if (matching_rgx and str(post.subreddit).lower() in h.subreddits):  # One or more criteria was matched
                             log.debug('Criteria was matched: {}'.format(matching_rgx))
                             post_time = datetime.datetime.fromtimestamp(post.created)
-                            last_time = self.grab_last_time('data/last_submission.txt')
+                            last_time = datetime.datetime.fromtimestamp(self.grab_last_time('data/last_submission.txt'))
 
                             if (last_time is None) or (post_time > last_time):
                                 log.info("New post: {0.title} ({0.subreddit.display_name})".format(post))
                                 self.handle_post(post, h)
+                            else:
+                                log.debug('Skipping. Post time was before last check.')
                     
                     self.save_last_time('data/last_submission.txt', post.created)
 
