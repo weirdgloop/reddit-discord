@@ -33,8 +33,8 @@ class RedditBot:
         sub = self.reddit.subreddit(subs)
         log.info("Monitoring subreddits: {}".format(subs))
 
-        c_stream = sub.stream.comments(pause_after=0)
-        s_stream = sub.stream.submissions(pause_after=0)
+        c_stream = sub.stream.comments(pause_after=0, skip_existing=True)
+        s_stream = sub.stream.submissions(pause_after=0, skip_existing=True)
 
         while True:
             try:
