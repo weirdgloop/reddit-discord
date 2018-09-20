@@ -3,6 +3,7 @@ import re
 import time
 import logging
 import os
+import traceback
 
 import praw
 
@@ -88,7 +89,7 @@ class RedditBot:
                     time.sleep(30)  # Wait 30 seconds before trying again
                     log.warning("Restarting monitoring after 503...")
                 else:
-                    log.error("An error occurred: {0}".format(e))
+                    log.error("An error occurred: {0}\n".format(e, traceback.format_exc()))
                 self.handle_new()  # Go again
 
     def handle_post(self, post, hook):
