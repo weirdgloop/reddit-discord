@@ -119,7 +119,7 @@ class RedditBot:
             thumb = data.thumbnail if not data.is_self else self.config.sub_thumb
         elif isinstance(data, praw.models.Comment):
             p_type = 'comment'
-            url = 'https://reddit.com' + data.permalink
+            url = 'https://reddit.com' + data.permalink + '?context=1000'
             title = data.submission.title
             body = data.body
             thumb = self.config.comment_thumb
