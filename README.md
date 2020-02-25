@@ -1,5 +1,5 @@
 ## reddit
-This repository is for a multi-purpose Reddit bot that is intended for use for the RuneScape and Old School RuneScape wikis. As it is inevitable that people may link to the old locations of the wikis on Wikia, this bot will reply to those posts and comments with the correct link to the appropiate wiki. In addition, all comments and posts matching a certain criteria or regular expression will be logged to a Discord channel via a webhook.
+This repository is for a Reddit bot for Discord used by the RuneScape Wiki server. All comments and posts matching a certain criteria or regular expression will be logged to a Discord channel via a webhook.
 
 ### Dependencies
 * Python 3.5+ (developed using 3.6)

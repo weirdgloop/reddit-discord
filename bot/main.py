@@ -97,14 +97,10 @@ class RedditBot:
         if hook.url:
             self.handle_discord(post, hook.url)
 
-        # TODO: reply to post
-
     def handle_comment(self, comment, hook):
         """Handles an individual comment"""
         if hook.url:
             self.handle_discord(comment, hook.url)
-
-        # TODO: reply to post
 
     def handle_discord(self, data, url):
         """Handles the Discord webhooks"""
