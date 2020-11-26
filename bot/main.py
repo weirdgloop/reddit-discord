@@ -105,16 +105,15 @@ class RedditBot:
     def handle_discord(self, data, url):
         """Handles the Discord webhooks"""
         embed = Webhook(url, color=16729344)
-        embed.set_author(name=data.author.name, icon=data.subreddit.icon_img, url='https://reddit.com/u/{0}'.format(data.author.name))
 
         if isinstance(data, praw.models.Submission):
-            p_type = 'submission'
+            p_type = 'Submission'
             url = data.shortlink
             title = data.title
             body = data.selftext if data.is_self else data.url
             thumb = data.thumbnail if not data.is_self else self.config.sub_thumb
         elif isinstance(data, praw.models.Comment):
-            p_type = 'comment'
+            p_type = 'Comment'
             url = 'https://reddit.com' + data.permalink + '?context=1000'
             title = data.submission.title
             body = data.body
@@ -123,11 +122,11 @@ class RedditBot:
             log.warning('Received data that was not a submission or comment: {0}'.format(data))
             return
 
-        embed.set_title(title='New {0} (/r/{1})'.format(p_type, data.subreddit.display_name), url=url)
-        embed.add_field(name='**Title**', value=title, inline=True)
-        embed.add_field(name='**Body**', value=body[:750] + (body[750:] and '...'), inline=True)
+        embed.set_author(name='{0} on /r/{1}'.format(data.author.name, data.subreddit.display_name), icon=data.subreddit.icon_img, url='https://reddit.com/u/{0}'.format(data.author.name))
+        embed.set_title(title=p_type, url=url)
+        embed.add_field(name='**{0}**'.format(title), value=body[:750] + (body[750:] and '...'))
         embed.set_thumbnail(thumb)
-        embed.set_footer(text=self.config.footer_text, ts=True, icon=self.config.footer_icon)
+        # embed.set_footer(text=self.config.footer_text, ts=True, icon=self.config.footer_icon)
 
         e = embed.post()
         return e
