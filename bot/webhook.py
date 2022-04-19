@@ -76,9 +76,10 @@ class Webhook:
     def json(self, *arg):
         """Formats the data into a payload"""
 
-        data = {}
+        data = {'allowed_mentions': {
+            'parse': []
+        }, "embeds": []}
 
-        data["embeds"] = []
         embed = defaultdict(dict)
         if self.msg:
             data["content"] = self.msg
