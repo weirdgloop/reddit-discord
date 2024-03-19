@@ -114,7 +114,9 @@ class RedditBot:
             thumb = data.thumbnail if not data.is_self else self.config.sub_thumb
         elif isinstance(data, praw.models.Comment):
             p_type = 'Comment'
-            url = 'https://reddit.com' + data.permalink + '?context=1000'
+            # Current Reddit interface only supports up to 3 levels of context.
+            # More than 8 or so just doesn't load, 4-n will show context but not the actual linked comment.
+            url = 'https://reddit.com' + data.permalink + '?context=3'
             title = data.submission.title
             body = data.body
             thumb = self.config.comment_thumb
